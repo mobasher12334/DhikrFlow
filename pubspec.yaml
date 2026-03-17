@@ -14,7 +14,7 @@ dependencies:
   provider: ^6.1.2
 
   # Voice Recognition
-  speech_to_text: ^6.6.2
+  speech_to_text: ^7.3.0
 
   # Local Storage
   hive: ^2.2.3
