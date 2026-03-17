@@ -1,11 +1,7 @@
 plugins {
     id "com.android.application"
+    id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id "org.jetbrains.kotlin.android"
-}
-
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }
 
 android {
@@ -45,12 +41,3 @@ android {
 flutter {
     source "../.."
 }
-
-def flutterRoot = file("../..").absolutePath
-try {
-    def properties = new Properties()
-    rootProject.file('local.properties').withInputStream { properties.load(it) }
-    flutterRoot = properties.getProperty("flutter.sdk")
-} catch (Exception e) {}
-
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
