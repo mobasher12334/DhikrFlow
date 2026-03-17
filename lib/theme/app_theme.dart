@@ -36,6 +36,8 @@ class AppColors {
     [Color(0xFF8E2DE2), Color(0xFF4A00E0)], // Allahu Akbar – violet
     [Color(0xFFCC2B5E), Color(0xFF753A88)], // Astaghfirullah – rose-purple
     [Color(0xFF2193B0), Color(0xFF6DD5ED)], // Custom – sky blue
+    [Color(0xFF3A1C71), Color(0xFFD76D77)], // New Gradient 1
+    [Color(0xFF232526), Color(0xFF414345)], // New Gradient 2
   ];
 }
 

@@ -107,7 +107,9 @@ class _CounterPageState extends State<CounterPage>
               ),
             ),
           ),
-          _buildBody(context, provider, progress, gradient),
+          Positioned.fill(
+            child: _buildBody(context, provider, progress, gradient),
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -122,20 +124,26 @@ class _CounterPageState extends State<CounterPage>
     List<Color> gradient,
   ) {
     return SafeArea(
-      child: Column(
-        children: [
-          const SizedBox(height: AppSpacing.xl),
-          // Arabic text
-          Text(
-            provider.dhikr.arabicText,
-            style: const TextStyle(
-              fontSize: 36,
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-              height: 1.4,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: AppSpacing.xl),
+            // Arabic text
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                provider.dhikr.arabicText,
+                style: const TextStyle(
+                  fontSize: 36,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
           const SizedBox(height: AppSpacing.xxl),
           // Counter ring
           GestureDetector(
@@ -180,10 +188,11 @@ class _CounterPageState extends State<CounterPage>
           ),
         ),
         Text(
-          'of ${provider.target}',
+          'من ${provider.target}',
           style: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 14,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0.5,
           ),
         ),
@@ -211,10 +220,11 @@ class _CounterPageState extends State<CounterPage>
                 size: 14, color: AppColors.textSecondary),
             const SizedBox(width: 6),
             Text(
-              'Target: ${provider.target}  •  Tap ring to count',
+              'الهدف: ${provider.target}  •  اضغط للعد',
               style: const TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 12,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -245,7 +255,7 @@ class _CounterPageState extends State<CounterPage>
           Icon(Icons.check_circle, color: Colors.white),
           SizedBox(width: 8),
           Text(
-            'Target reached! Masha\'Allah 🌟',
+            'تم الوصول للهدف! ما شاء الله 🌟',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -266,7 +276,7 @@ class _CounterPageState extends State<CounterPage>
           // History FAB
           _fab(
             icon: Icons.bar_chart_rounded,
-            tooltip: 'History',
+            tooltip: 'السجل',
             color: AppColors.indigo,
             onTap: () => _showHistory(context, provider),
           ),
@@ -305,7 +315,7 @@ class _CounterPageState extends State<CounterPage>
           // Reset FAB
           _fab(
             icon: Icons.refresh_rounded,
-            tooltip: 'Reset',
+            tooltip: 'تصفير',
             color: AppColors.rose,
             onTap: () => _confirmReset(context, provider),
           ),
@@ -355,14 +365,14 @@ class _CounterPageState extends State<CounterPage>
         backgroundColor: const Color(0xFF1A2035),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md)),
-        title: const Text('Set Target',
+        title: const Text('تحديد الهدف',
             style: TextStyle(color: AppColors.textPrimary)),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           style: const TextStyle(color: AppColors.textPrimary, fontSize: 22),
           decoration: const InputDecoration(
-            hintText: 'e.g. 33, 99, 100',
+            hintText: 'مثال: ٣٣ أو ٩٩',
             hintStyle: TextStyle(color: AppColors.textMuted),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: AppColors.emerald),
@@ -372,7 +382,7 @@ class _CounterPageState extends State<CounterPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
+            child: const Text('إلغاء',
                 style: TextStyle(color: AppColors.textSecondary)),
           ),
           FilledButton(
@@ -382,7 +392,7 @@ class _CounterPageState extends State<CounterPage>
               Navigator.pop(ctx);
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.emerald),
-            child: const Text('Save'),
+            child: const Text('حفظ'),
           ),
         ],
       ),
@@ -396,14 +406,14 @@ class _CounterPageState extends State<CounterPage>
         backgroundColor: const Color(0xFF1A2035),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md)),
-        title: const Text('Reset Counter',
+        title: const Text('تصفير العداد',
             style: TextStyle(color: AppColors.textPrimary)),
-        content: const Text('Are you sure you want to reset the counter?',
+        content: const Text('هل أنت متأكد من تصفير العداد الحالي؟',
             style: TextStyle(color: AppColors.textSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
+            child: const Text('إلغاء',
                 style: TextStyle(color: AppColors.textSecondary)),
           ),
           FilledButton(
@@ -412,7 +422,7 @@ class _CounterPageState extends State<CounterPage>
               Navigator.pop(ctx);
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.rose),
-            child: const Text('Reset'),
+            child: const Text('تصفير'),
           ),
         ],
       ),
@@ -445,7 +455,7 @@ class _CounterPageState extends State<CounterPage>
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Text(
-                'Progress History',
+                'سجل النشاط',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
@@ -455,7 +465,7 @@ class _CounterPageState extends State<CounterPage>
             Expanded(
               child: provider.history.isEmpty
                   ? const Center(
-                      child: Text('No history yet',
+                      child: Text('لا يوجد سجل بعد',
                           style: TextStyle(color: AppColors.textMuted)))
                   : ListView.separated(
                       controller: scrollCtrl,

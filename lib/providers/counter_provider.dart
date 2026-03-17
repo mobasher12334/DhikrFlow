@@ -74,7 +74,7 @@ class CounterProvider extends ChangeNotifier {
     } else {
       HapticService.instance.successCount();
     }
-    AudioService.instance.playClick();
+    // Audio click removed per user request for silent counting.
   }
 
   /// Resets the counter and target-reached flag without saving to history.
@@ -109,7 +109,13 @@ class CounterProvider extends ChangeNotifier {
     if (!_speechAvailable) {
       _speechAvailable = await _speech.initialize(
         onError: (e) => debugPrint('[STT] error: ${e.errorMsg}'),
-        onStatus: (s) => debugPrint('[STT] status: $s'),
+        onStatus: (s) {
+          debugPrint('[STT] status: $s');
+          if ((s == 'notListening' || s == 'done') && _micActive) {
+            // Auto-restart listening to keep it continuous
+            _startListeningInner();
+          }
+        },
       );
     }
 
@@ -118,10 +124,18 @@ class CounterProvider extends ChangeNotifier {
     _micActive = true;
     notifyListeners();
 
+    await _startListeningInner();
+  }
+
+  Future<void> _startListeningInner() async {
+    // A small delay to avoid state clashes if it just stopped
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!_micActive) return;
+
     await _speech.listen(
       localeId: 'ar-SA',
       listenFor: const Duration(minutes: 5),
-      pauseFor: const Duration(seconds: 3),
+      pauseFor: const Duration(seconds: 5), // Increased pause tolerance
       partialResults: true,
       onResult: _onSpeechResult,
     );
@@ -157,13 +171,15 @@ class CounterProvider extends ChangeNotifier {
   /// counter from firing on every partial hypothesis update.
   void _onSpeechResult(dynamic result) {
     // result is SpeechRecognitionResult
-    if (!result.finalResult) return;
+    if (!result.finalResult && result.recognizedWords.isEmpty) return;
 
     final recognizedText = (result.recognizedWords as String).trim();
     debugPrint('[STT] recognized: $recognizedText');
 
     if (_matchesKeyword(recognizedText)) {
       increment();
+      // If we match on a partial result, we could technically force a restart 
+      // to clear the buffer, but continuous listening handles this better.
     }
   }
 

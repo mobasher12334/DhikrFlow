@@ -108,11 +108,33 @@ class DhikrPresets {
     isCustom: true,
   );
 
+  static const lailahaillallah = DhikrModel(
+    id: 'lailahaillallah',
+    name: 'La ilaha illallah',
+    arabicText: 'لَا إِلَهَ إِلَّا اللَّهُ',
+    transliteration: 'La ilaha illallah',
+    defaultTarget: 33,
+    gradientIndex: 6,
+    keywords: ['لا إله', 'إلا الله', 'لا اله', 'الا الله'],
+  );
+
+  static const hasbunallah = DhikrModel(
+    id: 'hasbunallah',
+    name: 'Hasbunallah',
+    arabicText: 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',
+    transliteration: 'Hasbunallah wa ni\'mal wakil',
+    defaultTarget: 33,
+    gradientIndex: 7,
+    keywords: ['حسبنا', 'ونعم', 'الوكيل', 'حسبنا الله'],
+  );
+
   static const List<DhikrModel> all = [
     subhanallah,
     alhamdulillah,
     allahuakbar,
     astaghfirullah,
+    lailahaillallah,
+    hasbunallah,
     custom,
   ];
 }
