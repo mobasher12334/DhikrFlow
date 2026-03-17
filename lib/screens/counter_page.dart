@@ -163,6 +163,7 @@ class _CounterPageState extends State<CounterPage>
           const SizedBox(height: 90),
         ],
       ),
+      ),
     );
   }
 

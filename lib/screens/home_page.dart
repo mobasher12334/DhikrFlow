@@ -68,16 +68,17 @@ class _HomePageState extends State<HomePage> {
       pinned: true,
       backgroundColor: AppColors.darkBackground,
       elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart_rounded, color: AppColors.textPrimary),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const StatsPage()));
-            },
-            tooltip: 'الإحصائيات',
-          ),
-          const SizedBox(width: 8),
-        ],
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.bar_chart_rounded, color: AppColors.textPrimary),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const StatsPage()));
+          },
+          tooltip: 'الإحصائيات',
+        ),
+        const SizedBox(width: 8),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.only(right: 24, bottom: 16),
         title: Column(
           mainAxisAlignment: MainAxisAlignment.end,
