@@ -52,7 +52,9 @@ class StatsPage extends StatelessWidget {
                     children: [
                       _buildStatCard('إجمالي الأذكار', totalDhikrs.toString(), AppColors.emerald),
                       const SizedBox(width: AppSpacing.md),
-                      _buildStatCard('الجلسات المكتملة', targetReachedCount.toString(), AppColors.indigo),
+                      _buildStatCard('أهداف مكتملة', targetReachedCount.toString(), AppColors.indigo),
+                      const SizedBox(width: AppSpacing.md),
+                      _buildStatCard('إجمالي الجلسات', entries.length.toString(), AppColors.rose),
                     ],
                   ),
                 ),
@@ -131,12 +133,15 @@ class StatsPage extends StatelessWidget {
           children: [
              Text(
               title,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
             Text(
               value,
-              style: TextStyle(color: color, fontSize: 32, fontWeight: FontWeight.bold),
+              style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
         ),

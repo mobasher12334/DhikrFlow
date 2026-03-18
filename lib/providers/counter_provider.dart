@@ -49,16 +49,15 @@ class CounterProvider extends ChangeNotifier {
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _speechAvailable = false;
+  int _lastTotalCount = 0;
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  /// Increment the counter by one and fire audio + haptic feedback.
+  /// Increment the counter by the given amount (default 1).
   ///
-  /// Checks whether the new count equals [target] to trigger the
-  /// target-reached celebration pattern instead of the regular tick.
-  Future<void> increment() async {
-    if (_targetReached) return;
-    _count++;
+  /// SILENT MONK MODE: All haptic and audio feedbacks are removed during counting.
+  Future<void> increment({int amount = 1}) async {
+    _count += amount;
     _pulseTrigger = true;
     notifyListeners();
 
@@ -67,14 +66,10 @@ class CounterProvider extends ChangeNotifier {
     _pulseTrigger = false;
     notifyListeners();
 
-    if (_count >= _target) {
+    if (_count >= _target && !_targetReached) {
       _targetReached = true;
-      HapticService.instance.targetReached();
       _saveHistory();
-    } else {
-      HapticService.instance.successCount();
     }
-    // Audio click removed per user request for silent counting.
   }
 
   /// Resets the counter and target-reached flag without saving to history.
@@ -132,6 +127,9 @@ class CounterProvider extends ChangeNotifier {
     await Future.delayed(const Duration(milliseconds: 100));
     if (!_micActive) return;
 
+    // Reset the buffer tracker on new session
+    _lastTotalCount = 0;
+
     await _speech.listen(
       localeId: 'ar-SA',
       listenFor: const Duration(minutes: 5),
@@ -161,46 +159,48 @@ class CounterProvider extends ChangeNotifier {
 
   /// Callback invoked by [SpeechToText] with incremental recognition results.
   ///
-  /// **Fuzzy Matching Algorithm:**
-  /// Rather than requiring an exact phrase match, we iterate over
-  /// [DhikrModel.keywords] and check whether the recognized [text] *contains*
-  /// any keyword as a substring. This tolerates common ASR errors (e.g. missing
-  /// definite articles, slight mispronunciations, short pauses mid-phrase).
-  ///
-  /// Only *final* results are acted upon (isFinal == true) to prevent the
-  /// counter from firing on every partial hypothesis update.
+  /// **Text Buffer Differential Algorithm:**
+  /// Analyzes the entire ongoing speech string and counts the TOTAL occurrences
+  /// of the target Dhikr keywords. If the total frequency is greater than the
+  /// last known frequency (`_lastTotalCount`), it increments the app counter
+  /// by the exact difference.
   void _onSpeechResult(dynamic result) {
-    // result is SpeechRecognitionResult
     if (!result.finalResult && result.recognizedWords.isEmpty) return;
 
     final recognizedText = (result.recognizedWords as String).trim();
-    debugPrint('[STT] recognized: $recognizedText');
+    
+    // Count how many times the keywords appear in the current buffer
+    final currentTotalCount = _countWordFrequency(recognizedText);
 
-    if (_matchesKeyword(recognizedText)) {
-      increment();
-      // If we match on a partial result, we could technically force a restart 
-      // to clear the buffer, but continuous listening handles this better.
+    if (currentTotalCount > _lastTotalCount) {
+      final diff = currentTotalCount - _lastTotalCount;
+      increment(amount: diff);
+      _lastTotalCount = currentTotalCount;
     }
   }
 
-  /// Returns true if [text] contains any keyword from [DhikrModel.keywords].
-  ///
-  /// The match is case-insensitive on the Arabic Unicode level and also
-  /// performs a normalised comparison (stripping tashkeel diacritics).
-  bool _matchesKeyword(String text) {
-    final normalised = _normaliseArabic(text);
+  /// Calculates the total frequency of any valid keyword in the given text.
+  int _countWordFrequency(String text) {
+    final normalisedText = _normaliseArabic(text);
+    int totalMatches = 0;
+
+    // A simple approach: for each keyword, count its non-overlapping occurrences
     for (final keyword in _dhikr.keywords) {
-      if (normalised.contains(_normaliseArabic(keyword))) {
-        return true;
+      final nk = _normaliseArabic(keyword);
+      if (nk.isEmpty) continue;
+      
+      int index = 0;
+      while (true) {
+        index = normalisedText.indexOf(nk, index);
+        if (index == -1) break;
+        totalMatches++;
+        index += nk.length; // move past the found keyword to avoid overlapping
       }
     }
-    return false;
+    return totalMatches;
   }
 
   /// Strips common Arabic diacritics (tashkeel) to improve matching tolerance.
-  ///
-  /// ASR engines frequently omit or misplace fatha/kasra/damma marks, so
-  /// comparing without them significantly reduces false negatives.
   String _normaliseArabic(String input) {
     // Unicode ranges for Arabic diacritics: U+064B–U+065F
     return input.replaceAll(RegExp(r'[\u064B-\u065F]'), '');
@@ -235,6 +235,7 @@ class CounterProvider extends ChangeNotifier {
   @override
   void dispose() {
     _speech.stop();
+    _speech.cancel(); // Strictly kill engine
     super.dispose();
   }
 }
