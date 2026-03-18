@@ -9,15 +9,22 @@ subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 subprojects {
-    project.evaluationDependsOn(':app')
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            if (project.android.namespace == null) {
-                if (project.name == 'vosk_flutter') {
-                    project.android.namespace = 'org.vosk.vosk_flutter'
+    def fixProjectNamespace = { prj ->
+        if (prj.hasProperty('android')) {
+            if (prj.android.namespace == null) {
+                if (prj.name == 'vosk_flutter') {
+                    prj.android.namespace = 'org.vosk.vosk_flutter'
+                } else if (prj.group) {
+                    prj.android.namespace = prj.group
                 }
             }
         }
+    }
+
+    if (project.state.executed) {
+        fixProjectNamespace(project)
+    } else {
+        project.afterEvaluate { fixProjectNamespace(it) }
     }
 }
 tasks.register("clean", Delete) {
