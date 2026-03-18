@@ -10,6 +10,15 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            if (project.android.namespace == null) {
+                if (project.name == 'vosk_flutter') {
+                    project.android.namespace = 'org.vosk.vosk_flutter'
+                }
+            }
+        }
+    }
 }
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
