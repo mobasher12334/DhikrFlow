@@ -132,8 +132,8 @@ class CounterProvider extends ChangeNotifier {
 
     await _speech.listen(
       localeId: 'ar-SA',
-      listenFor: const Duration(minutes: 5),
-      pauseFor: const Duration(seconds: 5), // Increased pause tolerance
+      listenMode: stt.ListenMode.dictation,
+      onDevice: true,
       partialResults: true,
       onResult: _onSpeechResult,
     );
@@ -184,9 +184,14 @@ class CounterProvider extends ChangeNotifier {
     final normalisedText = _normaliseArabic(text);
     int totalMatches = 0;
 
+    // Use predefined keywords, but if none exist (e.g. Custom Dhikr), use the arabic text itself.
+    final targetPhrases = _dhikr.keywords.isNotEmpty 
+        ? _dhikr.keywords 
+        : [_dhikr.arabicText];
+
     // A simple approach: for each keyword, count its non-overlapping occurrences
-    for (final keyword in _dhikr.keywords) {
-      final nk = _normaliseArabic(keyword);
+    for (final phrase in targetPhrases) {
+      final nk = _normaliseArabic(phrase);
       if (nk.isEmpty) continue;
       
       int index = 0;
