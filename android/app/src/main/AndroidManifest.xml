@@ -1,9 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Required for speech_to_text -->
+    <!-- Required for speech_to_text / Vosk -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <!-- Required for speech recognition model download & STT streaming -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <!-- Required for vibration package -->
     <uses-permission android:name="android.permission.VIBRATE"/>
 
@@ -39,12 +40,5 @@
 
 
     </application>
-
-    <!-- Required by speech_to_text to query available recognizers -->
-    <queries>
-        <intent>
-            <action android:name="android.speech.RecognitionService" />
-        </intent>
-    </queries>
 
 </manifest>

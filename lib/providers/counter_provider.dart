@@ -1,11 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:vosk_flutter/vosk_flutter.dart';
 
 import '../models/dhikr_model.dart';
 import '../models/history_entry.dart';
-import '../services/audio_service.dart';
-import '../services/haptic_service.dart';
+import '../services/vosk_service.dart';
 
 /// Central state management for the active Dhikr session.
 ///
@@ -47,8 +47,10 @@ class CounterProvider extends ChangeNotifier {
 
   // ── Internal ───────────────────────────────────────────────────────────────
 
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _speechAvailable = false;
+  Recognizer? _recognizer;
+  SpeechService? _speechService;
+  
+  String _entireSessionText = '';
   int _lastTotalCount = 0;
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -99,78 +101,64 @@ class CounterProvider extends ChangeNotifier {
     }
   }
 
-  /// Internal: initialise STT and begin a listening session.
+  /// Internal: initialise Vosk and begin a continuous listening session.
   Future<void> _startListening() async {
-    if (!_speechAvailable) {
-      _speechAvailable = await _speech.initialize(
-        onError: (e) => debugPrint('[STT] error: ${e.errorMsg}'),
-        onStatus: (s) {
-          debugPrint('[STT] status: $s');
-          if ((s == 'notListening' || s == 'done') && _micActive) {
-            // Auto-restart listening to keep it continuous
-            _startListeningInner();
-          }
-        },
-      );
+    if (!VoskService.instance.isReady) {
+      await VoskService.instance.init();
     }
 
-    if (!_speechAvailable) return;
+    _recognizer = await VoskService.instance.createRecognizer();
+    _speechService = await VoskService.instance.initSpeechService(_recognizer!);
 
     _micActive = true;
+    _entireSessionText = '';
+    _lastTotalCount = 0;
     notifyListeners();
 
-    await _startListeningInner();
+    _speechService!.onPartial().listen((e) {
+      if (!_micActive) return;
+      final map = jsonDecode(e);
+      final partialText = map['partial'] ?? '';
+      _processCumulativeText('$_entireSessionText $partialText');
+    });
+
+    _speechService!.onResult().listen((e) {
+      if (!_micActive) return;
+      final map = jsonDecode(e);
+      final finalText = map['text'] ?? '';
+      _entireSessionText = '$_entireSessionText $finalText'.trim();
+      _processCumulativeText(_entireSessionText);
+    });
+
+    await _speechService!.start();
   }
 
-  Future<void> _startListeningInner() async {
-    // A small delay to avoid state clashes if it just stopped
-    await Future.delayed(const Duration(milliseconds: 100));
-    if (!_micActive) return;
-
-    // Reset the buffer tracker on new session
-    _lastTotalCount = 0;
-
-    await _speech.listen(
-      localeId: 'ar-SA',
-      listenMode: stt.ListenMode.dictation,
-      onDevice: true,
-      partialResults: true,
-      onResult: _onSpeechResult,
-    );
-  }
-
-  /// Internal: gracefully stop the listening session.
-  ///
-  /// This is also called from [CounterPage] via [WidgetsBindingObserver]
-  /// when the app is backgrounded, ensuring battery is not wasted.
+  /// Internal: gracefully stop the listening session and clean up Vosk streams.
   Future<void> _stopListening() async {
     _micActive = false;
     notifyListeners();
-    await _speech.stop();
+    
+    if (_speechService != null) {
+      await _speechService!.stop();
+      await _speechService!.dispose();
+      _speechService = null;
+    }
+    if (_recognizer != null) {
+      _recognizer!.dispose();
+      _recognizer = null;
+    }
   }
 
   /// Forcibly stops the microphone without notifying (used on screen dispose).
   Future<void> forceStopMicrophone() async {
-    if (_micActive) {
-      _micActive = false;
-      await _speech.stop();
-    }
+    await _stopListening();
   }
 
-  /// Callback invoked by [SpeechToText] with incremental recognition results.
-  ///
-  /// **Text Buffer Differential Algorithm:**
-  /// Analyzes the entire ongoing speech string and counts the TOTAL occurrences
-  /// of the target Dhikr keywords. If the total frequency is greater than the
-  /// last known frequency (`_lastTotalCount`), it increments the app counter
-  /// by the exact difference.
-  void _onSpeechResult(dynamic result) {
-    if (!result.finalResult && result.recognizedWords.isEmpty) return;
-
-    final recognizedText = (result.recognizedWords as String).trim();
+  /// Analyzes the cumulative speech string and matches the total Dhikr occurrences.
+  void _processCumulativeText(String text) {
+    if (text.trim().isEmpty) return;
     
-    // Count how many times the keywords appear in the current buffer
-    final currentTotalCount = _countWordFrequency(recognizedText);
+    final currentTotalCount = _countWordFrequency(text);
 
     if (currentTotalCount > _lastTotalCount) {
       final diff = currentTotalCount - _lastTotalCount;
@@ -239,8 +227,7 @@ class CounterProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _speech.stop();
-    _speech.cancel(); // Strictly kill engine
+    forceStopMicrophone();
     super.dispose();
   }
 }
